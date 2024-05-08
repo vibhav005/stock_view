@@ -35,7 +35,7 @@ const StockChart = ({ stockData }) => {
 
     return (
         <div>
-            <h2>Stock Chart : </h2>
+            <h2>Stock Chart : {stockData[0].SYMBOL} </h2>
             <div ref={chartContainerRef} style={{ width: "100%", height: "500px" }} />
         </div>
     );
