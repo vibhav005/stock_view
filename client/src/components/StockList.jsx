@@ -1,11 +1,8 @@
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import DataUsageIcon from '@mui/icons-material/DataUsage';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { Button, Card, CircularProgress, Grid, IconButton, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Button, Card, CircularProgress, Grid } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { addStock, fetchHistoricalData, fetchStocks, fetchStocksBySymbol, removeStock } from '../services/api';
 import StockChart from './StockChart';
+import StockTable from './StockTable';
 
 function StockList() {
     const [stocks, setStocks] = useState({});
@@ -28,17 +25,19 @@ function StockList() {
         setSelectedStock(null);
     };
 
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const data = await fetchStocks();
+            setStocks(data);
+            setLoading(false);
+        } catch (error) {
+            console.error(error);
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const data = await fetchStocks();
-                setStocks(data);
-                setLoading(false);
-            } catch (error) {
-                console.error(error);
-                setLoading(false);
-            }
-        };
         fetchData();
     }, []);
 
@@ -61,8 +60,7 @@ function StockList() {
         try {
             const data = await addStock(symbol);
             alert(data.message);
-            const newStocks = await fetchStocks();
-            setStocks(newStocks);
+            fetchData();
         } catch (error) {
             console.error(error);
             alert('Failed to add stock.');
@@ -75,8 +73,7 @@ function StockList() {
         try {
             const data = await removeStock(symbol);
             alert(data.message);
-            const newStocks = await fetchStocks();
-            setStocks(newStocks);
+            fetchData();
         } catch (error) {
             console.error(error);
             alert('Failed to remove stock.');
@@ -135,80 +132,22 @@ function StockList() {
                     {loading ? (
                         <CircularProgress color="inherit" />
                     ) : (
-                        <TableContainer component={Paper} style={{ height: 400, overflow: 'auto' }}>
-                            <Table sx={{ width: 400 }} aria-label="stock table">
-                                <TableHead>
-                                    <TableRow>
-                                        {[
-                                            'Stock Symbol',
-                                            'CMP',
-                                            'Previous Close',
-                                            'Open',
-                                            'Close',
-                                            'LowerCP',
-                                            'UpperCP',
-                                            'Intraday(HMIN)',
-                                            'Intraday(HMAX)',
-                                            'Intraday(HVALUE)',
-                                            'Actions',
-                                        ].map((head) => (
-                                            <TableCell key={head} onClick={() => requestSort(head)} style={{ cursor: 'pointer' }}>
-                                                {head} {sortConfig.key === head && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {sortedStocksArray.map(([stockSymbol, quoteData]) => (
-                                        <TableRow key={stockSymbol}>
-                                            <TableCell>{stockSymbol}</TableCell>
-                                            <TableCell>{quoteData.CMP}</TableCell>
-                                            <TableCell>{quoteData['Previous Close']}</TableCell>
-                                            <TableCell>{quoteData.Open}</TableCell>
-                                            <TableCell>{quoteData.Close}</TableCell>
-                                            <TableCell>{quoteData['Lower Circuit Price']}</TableCell>
-                                            <TableCell>{quoteData['Upper Circuit Price']}</TableCell>
-                                            <TableCell>{quoteData['Intraday High/Low'].Min}</TableCell>
-                                            <TableCell>{quoteData['Intraday High/Low'].Max}</TableCell>
-                                            <TableCell>{quoteData['Intraday High/Low'].Value}</TableCell>
-                                            <TableCell>
-                                                <IconButton
-                                                    aria-label="more"
-                                                    aria-controls="long-menu"
-                                                    aria-haspopup="true"
-                                                    onClick={(event) => handleClick(event, stockSymbol)}
-                                                >
-                                                    <MoreVertIcon />
-                                                </IconButton>
-                                                <Menu
-                                                    id="long-menu"
-                                                    anchorEl={anchorEl}
-                                                    keepMounted
-                                                    open={open}
-                                                    onClose={handleClose}
-                                                    PaperProps={{
-                                                        style: {
-                                                            maxHeight: 48 * 4.5,
-                                                            width: '20ch',
-                                                        },
-                                                    }}
-                                                >
-                                                    <MenuItem onClick={(event) => handleAddStock(event, selectedStock)}>
-                                                        <AddCircleOutlineIcon /> Add
-                                                    </MenuItem>
-                                                    <MenuItem onClick={(event) => handleRemoveStock(event, selectedStock)}>
-                                                        <RemoveCircleOutlineIcon /> Remove
-                                                    </MenuItem>
-                                                    <MenuItem onClick={(event) => handleFetchHistoricalData(event, selectedStock)}>
-                                                        <DataUsageIcon /> Fetch Data
-                                                    </MenuItem>
-                                                </Menu>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                        <StockTable
+                            stocks={stocks}
+                            sortedStocksArray={sortedStocksArray}
+                            sortConfig={sortConfig}
+                            requestSort={requestSort}
+                            anchorEl={anchorEl}
+                            open={open}
+                            handleClick={handleClick}
+                            handleClose={handleClose}
+                            handleAddStock={handleAddStock}
+                            handleRemoveStock={handleRemoveStock}
+                            handleFetchHistoricalData={handleFetchHistoricalData}
+                            selectedStock={selectedStock}
+                            fetchData={fetchData}
+                            refreshInterval={100000}
+                        />
                     )}
                 </Grid>
                 <Grid item xs={12} md={7}>
